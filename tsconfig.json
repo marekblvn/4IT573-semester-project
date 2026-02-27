@@ -13,7 +13,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
-    "removeComments": true
+    "removeComments": true,
+    "paths": {
+      "@prisma-client": ["./prisma/generated/prisma-client"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
