@@ -6,6 +6,7 @@ import express from "express";
 import { createServer } from "node:http";
 import roomHandler from "./handlers/room-handler";
 import gameHandler from "./handlers/game-handler";
+import { login, register } from "./controllers/auth-controller";
 
 dotenv.config({ quiet: true });
 
@@ -22,6 +23,11 @@ async function startServer() {
     gameDataClient.connect(),
   ]);
   const app = express();
+
+  app.use(express.json());
+  app.post("/api/auth/register", register);
+  app.post("/api/auth/login", login);
+
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
     cors: { origin: "*" },
