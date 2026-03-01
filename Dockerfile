@@ -15,8 +15,6 @@ COPY . .
 
 RUN npm run build
 
-RUN cp -r src/db/generated build/db/
-
 EXPOSE 8080
 
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
