@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { getCurrentUser } from "../../contexts/user.context";
-import userDao from "../../dao/user.dao";
-import roomDao from "../../dao/room.dao";
+import UserDao from "../../dao/user.dao";
+import RoomDao from "../../dao/room.dao";
 import { ApplicationError } from "../../errors/application.error";
 import randomCode from "../../utils/random-code";
 import validate from "../../utils/validate";
@@ -9,7 +9,7 @@ import { JoinRoomSchema, LeaveRoomSchema } from "../../schemas/room.schema";
 
 export const create = async (_req: Request, res: Response) => {
   const { userId } = getCurrentUser()!;
-  const user = await userDao.findById(userId);
+  const user = await UserDao.findById(userId);
   if (user?.roomId) {
     throw new ApplicationError(
       400,
@@ -21,10 +21,10 @@ export const create = async (_req: Request, res: Response) => {
   const retries = 5;
   let iteration = 1;
   let uniqueCode = randomCode(5);
-  let existingRoom = await roomDao.findByCode(uniqueCode);
+  let existingRoom = await RoomDao.findByCode(uniqueCode);
   while (existingRoom && iteration <= retries) {
     uniqueCode = randomCode(5);
-    existingRoom = await roomDao.findByCode(uniqueCode);
+    existingRoom = await RoomDao.findByCode(uniqueCode);
     iteration++;
   }
   if (iteration > retries) {
@@ -37,7 +37,7 @@ export const create = async (_req: Request, res: Response) => {
   const roomCode = uniqueCode;
   let room;
   try {
-    room = await roomDao.create({
+    room = await RoomDao.create({
       code: roomCode,
       status: "LOBBY",
       owner: { connect: { id: userId } },
@@ -56,7 +56,7 @@ export const create = async (_req: Request, res: Response) => {
 export const join = async (req: Request, res: Response) => {
   const { roomCode } = await validate(JoinRoomSchema, req.body);
   const { userId } = getCurrentUser()!;
-  const room = await roomDao.findUnique({
+  const room = await RoomDao.delegate.findUnique({
     where: { code: roomCode },
     include: { _count: { select: { players: true } } },
   });
@@ -70,14 +70,14 @@ export const join = async (req: Request, res: Response) => {
   if (room._count.players >= 4) {
     throw new ApplicationError(400, "ROOM_FULL", `Room '${roomCode}' is full`);
   }
-  const updatedRoom = await roomDao.addPlayerToRoom(room.id, userId);
+  const updatedRoom = await RoomDao.addPlayerToRoom(room.id, userId);
   return res.status(200).json({ room: updatedRoom });
 };
 
 export const leave = async (req: Request, res: Response) => {
   const { roomCode } = await validate(LeaveRoomSchema, req.body);
   const { userId } = getCurrentUser()!;
-  const room = await roomDao.findUnique({
+  const room = await RoomDao.delegate.findUnique({
     where: { code: roomCode },
     include: { _count: { select: { players: true } } },
   });
@@ -89,10 +89,10 @@ export const leave = async (req: Request, res: Response) => {
     );
   }
 
-  const updatedRoom = await roomDao.removePlayerFromRoom(room.id, userId);
+  const updatedRoom = await RoomDao.removePlayerFromRoom(room.id, userId);
 
   if (updatedRoom.players.length <= 0) {
-    await roomDao.deleteById(room.id);
+    await RoomDao.deleteById(room.id);
   }
 
   return res.status(200).json();

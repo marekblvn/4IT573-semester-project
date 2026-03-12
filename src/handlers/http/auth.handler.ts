@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import validate from "../../utils/validate";
 import { LoginUserSchema, RegisterUserSchema } from "../../schemas/auth.schema";
-import userDao from "../../dao/user.dao";
+import UserDao from "../../dao/user.dao";
 import { ApplicationError } from "../../errors/application.error";
 
 export const register = async (req: Request, res: Response) => {
@@ -11,7 +11,7 @@ export const register = async (req: Request, res: Response) => {
     RegisterUserSchema,
     req.body,
   );
-  const existingUser = await userDao.findByUsername(username);
+  const existingUser = await UserDao.findByUsername(username);
   if (existingUser) {
     throw new ApplicationError(
       400,
@@ -21,7 +21,7 @@ export const register = async (req: Request, res: Response) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = await userDao.create({
+  const newUser = await UserDao.create({
     username,
     password: hashedPassword,
     name: name ?? username,
@@ -32,7 +32,7 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   const { username, password } = await validate(LoginUserSchema, req.body);
-  const user = await userDao.findByUsername(username);
+  const user = await UserDao.findByUsername(username);
   if (!user) {
     throw new ApplicationError(
       400,

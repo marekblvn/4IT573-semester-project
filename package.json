@@ -15,6 +15,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/server.js",
+    "docker:build": "docker-compose up --build",
     "build": "tsc",
     "start": "node build/server.js"
   },

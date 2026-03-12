@@ -8,6 +8,7 @@ import createRoomRouter from "./routes/room.routes";
 import errorHandler from "./handlers/http/error.handler";
 import createAuthRouter from "./routes/auth.routes";
 import authMiddleware from "./middlewares/auth.middleware";
+import assignRoomHandlers from "./handlers/ws/room.handler";
 
 dotenv.config({ quiet: true });
 
@@ -32,10 +33,11 @@ async function startServer() {
     adapter: createAdapter(pubClient, subClient),
   });
   io.on("connection", async (socket: Socket) => {
-    console.log(`Client connected: ${socket.id}`);
+    console.log(`Client connected: ${socket.id}`, socket.handshake.auth);
     socket.on("disconnect", (_reason, _details) =>
       console.log(`Client disconnected ${socket.id}`),
     );
+    assignRoomHandlers(io, socket);
   });
 
   const roomRouter = createRoomRouter();
