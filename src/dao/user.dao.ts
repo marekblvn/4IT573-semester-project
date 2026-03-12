@@ -1,18 +1,26 @@
 import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 
-const create = async (
-  data: Pick<Prisma.UserCreateInput, "username" | "name" | "password">,
-) => await prisma.user.create({ data });
+class UserDao {
+  private readonly db = prisma.user;
 
-const findByUsername = async (username: string) =>
-  await prisma.user.findUnique({ where: { username } });
+  async create(
+    data: Pick<Prisma.UserCreateInput, "username" | "name" | "password">,
+  ) {
+    return await prisma.user.create({ data });
+  }
 
-const findById = async (id: number) =>
-  await prisma.user.findUnique({ where: { id } });
+  async findByUsername(username: string) {
+    return await prisma.user.findUnique({ where: { username } });
+  }
 
-export default {
-  create,
-  findByUsername,
-  findById,
-};
+  async findById(id: number) {
+    return await prisma.user.findUnique({ where: { id } });
+  }
+
+  get delegate() {
+    return this.db;
+  }
+}
+
+export default new UserDao();

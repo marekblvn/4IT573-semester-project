@@ -1,46 +1,56 @@
 import { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 
-const create = async (data: Prisma.RoomCreateInput) =>
-  await prisma.room.create({
-    data,
-    include: { players: { select: { name: true, wins: true, id: true } } },
-  });
+class RoomDao {
+  private readonly db = prisma.room;
 
-const findByOwnerId = async (ownerId: number) =>
-  await prisma.room.findUnique({ where: { ownerId } });
+  async create(data: Prisma.RoomCreateInput) {
+    return await this.db.create({
+      data,
+      include: { players: { select: { name: true, wins: true, id: true } } },
+    });
+  }
 
-const findByCode = async (code: string) =>
-  await prisma.room.findUnique({ where: { code } });
+  async findByOwnerId(ownerId: number) {
+    return await this.db.findUnique({ where: { ownerId } });
+  }
 
-const addPlayerToRoom = async (roomId: number, newPlayerId: number) =>
-  await prisma.room.update({
-    where: { id: roomId },
-    data: { players: { connect: { id: newPlayerId } } },
-    include: { players: { select: { name: true, wins: true, id: true } } },
-  });
-
-const removePlayerFromRoom = async (roomId: number, playerId: number) =>
-  await prisma.room.update({
-    where: { id: roomId },
-    data: {
-      players: {
-        disconnect: { id: playerId },
+  async findByCode(code: string) {
+    return await prisma.room.findUnique({
+      where: { code },
+      include: {
+        players: { omit: { password: true } },
       },
-    },
-    include: { players: { select: { name: true, wins: true, id: true } } },
-  });
+    });
+  }
 
-const deleteById = (id: number) => prisma.room.delete({ where: { id } });
+  async addPlayerToRoom(roomId: number, newPlayerId: number) {
+    return await prisma.room.update({
+      where: { id: roomId },
+      data: { players: { connect: { id: newPlayerId } } },
+      include: { players: { select: { name: true, wins: true, id: true } } },
+    });
+  }
 
-const findUnique = prisma.room.findUnique;
+  async removePlayerFromRoom(roomId: number, playerId: number) {
+    return await prisma.room.update({
+      where: { id: roomId },
+      data: {
+        players: {
+          disconnect: { id: playerId },
+        },
+      },
+      include: { players: { select: { name: true, wins: true, id: true } } },
+    });
+  }
 
-export default {
-  create,
-  findByOwnerId,
-  findByCode,
-  addPlayerToRoom,
-  removePlayerFromRoom,
-  findUnique,
-  deleteById,
-};
+  async deleteById(id: number) {
+    return await prisma.room.delete({ where: { id } });
+  }
+
+  get delegate() {
+    return this.db;
+  }
+}
+
+export default new RoomDao();
