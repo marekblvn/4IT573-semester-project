@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import { getCurrentUser } from "../contexts/user.context";
-import userDao from "../dao/user.dao";
-import roomDao from "../dao/room.dao";
-import { ApplicationError } from "../errors/application.error";
-import randomCode from "../utils/random-code";
-import validate from "../utils/validate";
-import { JoinRoomSchema, LeaveRoomSchema } from "../schemas/room.schema";
+import { getCurrentUser } from "../../contexts/user.context";
+import userDao from "../../dao/user.dao";
+import roomDao from "../../dao/room.dao";
+import { ApplicationError } from "../../errors/application.error";
+import randomCode from "../../utils/random-code";
+import validate from "../../utils/validate";
+import { JoinRoomSchema, LeaveRoomSchema } from "../../schemas/room.schema";
 
 export const create = async (_req: Request, res: Response) => {
   const { userId } = getCurrentUser()!;

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { create, join, leave } from "../handlers/room.handler";
+import { create, join, leave } from "../handlers/http/room.handler";
 
 const createRoomRouter = () => {
   const router = Router();

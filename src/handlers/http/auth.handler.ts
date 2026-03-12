@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import validate from "../utils/validate";
-import { LoginUserSchema, RegisterUserSchema } from "../schemas/auth.schema";
-import userDao from "../dao/user.dao";
-import { ApplicationError } from "../errors/application.error";
+import validate from "../../utils/validate";
+import { LoginUserSchema, RegisterUserSchema } from "../../schemas/auth.schema";
+import userDao from "../../dao/user.dao";
+import { ApplicationError } from "../../errors/application.error";
 
 export const register = async (req: Request, res: Response) => {
   const { username, password, name } = await validate(

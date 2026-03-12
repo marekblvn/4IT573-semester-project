@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "node:http";
 import createRoomRouter from "./routes/room.routes";
-import errorHandler from "./handlers/error.handler";
+import errorHandler from "./handlers/http/error.handler";
 import createAuthRouter from "./routes/auth.routes";
 import authMiddleware from "./middlewares/auth.middleware";
 
