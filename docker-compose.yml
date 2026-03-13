@@ -1,5 +1,5 @@
 services:
-  app:
+  server:
     build: .
     ports:
       - "8080:8080"
@@ -17,8 +17,8 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./src
-          target: /app/src
+          path: ./server/src
+          target: /server/src
           ignore:
             - node_modules/
   postgres_db:
