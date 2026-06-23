@@ -1,4 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   ThemeProvider,
   CssBaseline,
@@ -20,7 +25,10 @@ import { AuthScreen } from "./components/AuthScreen";
 import { PCView } from "./components/PCView";
 import { MobileView } from "./components/MobileView";
 import { io, Socket } from "socket.io-client";
-import { type GameState, type CardColor } from "../../backend/src/game/uno";
+import {
+  type GameState,
+  type CardColor,
+} from "../../backend/src/game/uno";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 
@@ -33,27 +41,178 @@ export default function App() {
   );
   const [mode, setMode] = useState<"pc" | "mobile">("pc");
   const [gameId, setGameId] = useState<string | null>(null);
-  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [gameState, setGameState] =
+    useState<GameState | null>(null);
   const [activeLobbies, setActiveLobbies] = useState<
-    { gameId: string; status: string; playerCount: number }[]
+    {
+      gameId: string;
+      status: string;
+      playerCount: number;
+    }[]
   >([]);
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [networkInfo, setNetworkInfo] = useState({
     localIp: "localhost",
     port: 5001,
   });
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(
+    null,
+  );
   const [showError, setShowError] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
 
-  const apiHost = window.location.hostname;
+  const apiHost = globalThis.location.hostname;
   const apiBaseUrl = `http://${apiHost}:5001`;
   const wsBaseUrl = `http://${apiHost}:5001`;
 
+  const fetchLobbies = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/lobby/list`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setActiveLobbies(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch lobbies:", err);
+    }
+  }, [apiBaseUrl, token]);
+
+  const handleAuthSuccess = (
+    newToken: string,
+    newUsername: string,
+  ) => {
+    localStorage.setItem("token", newToken);
+    localStorage.setItem("username", newUsername);
+    setToken(newToken);
+    setUsername(newUsername);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setToken(null);
+    setUsername(null);
+    setGameId(null);
+    setGameState(null);
+    setMode("pc");
+    // Clear URL query parameters
+    globalThis.history.pushState(
+      {},
+      "",
+      globalThis.location.pathname,
+    );
+  };
+
+  const handleCreateLobby = async () => {
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/lobby/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setGameId(data.gameId);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err: unknown) {
+      setErrorMsg(
+        (err as Error).message ||
+          "Failed to create game lobby",
+      );
+      setShowError(true);
+    }
+  };
+
+  const handleJoinLobby = async (code: string) => {
+    const cleanCode = code.trim().toUpperCase();
+    if (!cleanCode) return;
+
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/lobby/check/${cleanCode}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setGameId(data.gameId);
+      } else {
+        throw new Error(data.error || "Room not found");
+      }
+    } catch (err: unknown) {
+      setErrorMsg(
+        (err as Error).message ||
+          "Failed to join game lobby",
+      );
+      setShowError(true);
+    }
+  };
+
+  const handleLeaveGame = () => {
+    setGameId(null);
+    setGameState(null);
+    // Clear search parameters from URL
+    globalThis.history.pushState(
+      {},
+      "",
+      globalThis.location.pathname,
+    );
+  };
+
+  // Socket action triggers
+  const handlePlayCard = (cardId: string) => {
+    socketRef.current?.emit("play-card", { cardId });
+  };
+
+  const handleDrawCard = () => {
+    socketRef.current?.emit("draw-card");
+  };
+
+  const handlePassTurn = () => {
+    socketRef.current?.emit("pass-turn");
+  };
+
+  const handleShoutUno = () => {
+    socketRef.current?.emit("shout-uno");
+  };
+
+  const handleSelectColor = (color: CardColor) => {
+    socketRef.current?.emit("select-color", { color });
+  };
+
+  const handleSetReady = (ready: boolean) => {
+    socketRef.current?.emit("set-ready", { ready });
+  };
+
+  const handleStartGame = () => {
+    socketRef.current?.emit("start-game");
+  };
+
+  const handleCatchUno = (target: string) => {
+    socketRef.current?.emit("catch-uno", {
+      targetUsername: target,
+    });
+  };
+
   // Parse URL Search Parameters on mount
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(
+      globalThis.location.search,
+    );
     const paramToken = params.get("token");
     const paramGameId = params.get("gameId");
     const paramMode = params.get("mode");
@@ -112,7 +271,7 @@ export default function App() {
       const interval = setInterval(fetchLobbies, 5000);
       return () => clearInterval(interval);
     }
-  }, [token, mode, gameId]);
+  }, [token, mode, gameId, fetchLobbies]);
 
   // Setup WebSocket connection when in a game room
   useEffect(() => {
@@ -127,7 +286,10 @@ export default function App() {
 
       socket.on("connect", () => {
         console.log("Connected to socket server");
-        socket.emit("join-game", { gameId, deviceType: mode });
+        socket.emit("join-game", {
+          gameId,
+          deviceType: mode,
+        });
       });
 
       socket.on("game-state", (state: GameState) => {
@@ -155,120 +317,6 @@ export default function App() {
       };
     }
   }, [token, gameId, mode, wsBaseUrl]);
-
-  const fetchLobbies = async () => {
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/lobby/list`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setActiveLobbies(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch lobbies:", err);
-    }
-  };
-
-  const handleAuthSuccess = (newToken: string, newUsername: string) => {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("username", newUsername);
-    setToken(newToken);
-    setUsername(newUsername);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    setToken(null);
-    setUsername(null);
-    setGameId(null);
-    setGameState(null);
-    setMode("pc");
-    // Clear URL query parameters
-    window.history.pushState({}, "", window.location.pathname);
-  };
-
-  const handleCreateLobby = async () => {
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/lobby/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setGameId(data.gameId);
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to create game lobby");
-      setShowError(true);
-    }
-  };
-
-  const handleJoinLobby = async (code: string) => {
-    const cleanCode = code.trim().toUpperCase();
-    if (!cleanCode) return;
-
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/lobby/check/${cleanCode}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setGameId(data.gameId);
-      } else {
-        throw new Error(data.error || "Room not found");
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to join game lobby");
-      setShowError(true);
-    }
-  };
-
-  const handleLeaveGame = () => {
-    setGameId(null);
-    setGameState(null);
-    // Clear search parameters from URL
-    window.history.pushState({}, "", window.location.pathname);
-  };
-
-  // Socket action triggers
-  const handlePlayCard = (cardId: string) => {
-    socketRef.current?.emit("play-card", { cardId });
-  };
-
-  const handleDrawCard = () => {
-    socketRef.current?.emit("draw-card");
-  };
-
-  const handlePassTurn = () => {
-    socketRef.current?.emit("pass-turn");
-  };
-
-  const handleShoutUno = () => {
-    socketRef.current?.emit("shout-uno");
-  };
-
-  const handleSelectColor = (color: CardColor) => {
-    socketRef.current?.emit("select-color", { color });
-  };
-
-  const handleSetReady = (ready: boolean) => {
-    socketRef.current?.emit("set-ready", { ready });
-  };
-
-  const handleStartGame = () => {
-    socketRef.current?.emit("start-game");
-  };
-
-  const handleCatchUno = (target: string) => {
-    socketRef.current?.emit("catch-uno", { targetUsername: target });
-  };
 
   // 1. Not Authenticated Screen
   if (!token || !username) {
@@ -301,24 +349,36 @@ export default function App() {
             }}
           >
             <Paper sx={{ p: 4, textAlign: "center" }}>
-              <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 800, mb: 2 }}
+              >
                 Join Game Room
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Enter the room code displayed on the PC screen to play!
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 3 }}
+              >
+                Enter the room code displayed on the PC
+                screen to play!
               </Typography>
               <TextField
                 fullWidth
                 label="Room Code"
                 variant="outlined"
                 value={joinCodeInput}
-                onChange={(e) => setJoinCodeInput(e.target.value)}
+                onChange={(e) =>
+                  setJoinCodeInput(e.target.value)
+                }
                 sx={{ mb: 3 }}
               />
               <Button
                 fullWidth
                 variant="contained"
-                onClick={() => handleJoinLobby(joinCodeInput)}
+                onClick={() =>
+                  handleJoinLobby(joinCodeInput)
+                }
                 sx={{ py: 1.5 }}
               >
                 Connect to Game
@@ -351,7 +411,9 @@ export default function App() {
               color: "#fff",
             }}
           >
-            <Typography>Connecting to lobby {gameId}...</Typography>
+            <Typography>
+              Connecting to lobby {gameId}...
+            </Typography>
           </Box>
         </ThemeProvider>
       );
@@ -374,7 +436,10 @@ export default function App() {
           autoHideDuration={4000}
           onClose={() => setShowError(false)}
         >
-          <Alert severity="error" onClose={() => setShowError(false)}>
+          <Alert
+            severity="error"
+            onClose={() => setShowError(false)}
+          >
             {errorMsg}
           </Alert>
         </Snackbar>
@@ -398,12 +463,20 @@ export default function App() {
             }}
           >
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 900 }}>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 900 }}
+              >
                 Uno Card Game
               </Typography>
-              <Typography variant="subtitle1" color="text.secondary">
+              <Typography
+                variant="subtitle1"
+                color="text.secondary"
+              >
                 Logged in as:{" "}
-                <strong style={{ color: "#fff" }}>{username}</strong>
+                <strong style={{ color: "#fff" }}>
+                  {username}
+                </strong>
               </Typography>
             </Box>
             <Button
@@ -418,9 +491,12 @@ export default function App() {
 
           <Grid container spacing={4}>
             {/* Left: Quick Actions */}
-            <Grid item xs={12} md={5}>
+            <Grid size={{ xs: 12, md: 5 }}>
               <Paper sx={{ p: 4, height: "100%" }}>
-                <Typography variant="h5" sx={{ fontWeight: 800, mb: 4 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 800, mb: 4 }}
+                >
                   Game Operations
                 </Typography>
 
@@ -437,7 +513,10 @@ export default function App() {
 
                 <Divider sx={{ my: 3 }} />
 
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, mb: 2 }}
+                >
                   Join Existing Lobby
                 </Typography>
                 <Box sx={{ display: "flex", gap: 1.5 }}>
@@ -445,7 +524,9 @@ export default function App() {
                     fullWidth
                     label="Enter 5-character Code"
                     value={joinCodeInput}
-                    onChange={(e) => setJoinCodeInput(e.target.value)}
+                    onChange={(e) =>
+                      setJoinCodeInput(e.target.value)
+                    }
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         borderRadius: 3,
@@ -455,7 +536,9 @@ export default function App() {
                   <Button
                     variant="contained"
                     color="secondary"
-                    onClick={() => handleJoinLobby(joinCodeInput)}
+                    onClick={() =>
+                      handleJoinLobby(joinCodeInput)
+                    }
                     sx={{ px: 3 }}
                   >
                     Join
@@ -465,7 +548,7 @@ export default function App() {
             </Grid>
 
             {/* Right: Active Lobbies */}
-            <Grid item xs={12} md={7}>
+            <Grid size={{ xs: 12, md: 7 }}>
               <Paper
                 sx={{
                   p: 4,
@@ -474,7 +557,10 @@ export default function App() {
                   flexDirection: "column",
                 }}
               >
-                <Typography variant="h5" sx={{ fontWeight: 800, mb: 3 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 800, mb: 3 }}
+                >
                   Active Lobbies
                 </Typography>
 
@@ -490,7 +576,8 @@ export default function App() {
                       No active lobbies at the moment.
                     </Typography>
                     <Typography variant="caption">
-                      Create one to start playing with friends!
+                      Create one to start playing with
+                      friends!
                     </Typography>
                   </Box>
                 ) : (
@@ -501,17 +588,22 @@ export default function App() {
                         sx={{
                           mb: 2,
                           p: 2,
-                          background: "rgba(255,255,255,0.02)",
+                          background:
+                            "rgba(255,255,255,0.02)",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          border: "1px solid rgba(255,255,255,0.05)",
+                          border:
+                            "1px solid rgba(255,255,255,0.05)",
                         }}
                       >
                         <ListItemText
                           primary={
                             <Typography
-                              sx={{ fontWeight: 800, fontSize: "1.1rem" }}
+                              sx={{
+                                fontWeight: 800,
+                                fontSize: "1.1rem",
+                              }}
                             >
                               Room Code: {lobby.gameId}
                             </Typography>
@@ -522,7 +614,9 @@ export default function App() {
                           variant="outlined"
                           color="primary"
                           startIcon={<MeetingRoomIcon />}
-                          onClick={() => handleJoinLobby(lobby.gameId)}
+                          onClick={() =>
+                            handleJoinLobby(lobby.gameId)
+                          }
                         >
                           Join Room
                         </Button>
@@ -539,7 +633,10 @@ export default function App() {
           autoHideDuration={4000}
           onClose={() => setShowError(false)}
         >
-          <Alert severity="error" onClose={() => setShowError(false)}>
+          <Alert
+            severity="error"
+            onClose={() => setShowError(false)}
+          >
             {errorMsg}
           </Alert>
         </Snackbar>
@@ -570,7 +667,8 @@ export default function App() {
   }
 
   // The local server port is 5001, but the frontend port is whatever Vite binds to (typically window.location.port).
-  const frontendPort = parseInt(window.location.port) || 5173;
+  const frontendPort =
+    Number.parseInt(globalThis.location.port) || 5173;
 
   return (
     <ThemeProvider theme={theme}>
@@ -593,11 +691,18 @@ export default function App() {
             }}
           >
             <Box>
-              <Typography variant="h4" sx={{ fontWeight: 900 }}>
+              <Typography
+                variant="h4"
+                sx={{ fontWeight: 900 }}
+              >
                 Uno Card Board Table
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Playing as: <strong>{username}</strong> (PC View)
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                Playing as: <strong>{username}</strong> (PC
+                View)
               </Typography>
             </Box>
             <Button
@@ -627,7 +732,10 @@ export default function App() {
         autoHideDuration={4000}
         onClose={() => setShowError(false)}
       >
-        <Alert severity="error" onClose={() => setShowError(false)}>
+        <Alert
+          severity="error"
+          onClose={() => setShowError(false)}
+        >
           {errorMsg}
         </Alert>
       </Snackbar>

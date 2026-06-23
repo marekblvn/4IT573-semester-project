@@ -1,4 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Box,
   Card,
@@ -19,50 +24,67 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   apiBaseUrl,
   onAuthSuccess,
 }) => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLogin, setIsLogin] = useState<boolean>(true);
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSubmit = async (e: React.SubmitEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setError("Please fill in all fields");
-      return;
-    }
-
-    setError("");
-    setLoading(true);
-
-    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-
-    try {
-      const response = await fetch(`${apiBaseUrl}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Authentication failed");
+  const handleSubmit = useCallback(
+    async (e: React.SubmitEvent): Promise<void> => {
+      e.preventDefault();
+      if (!username.trim() || !password.trim()) {
+        setError("Please fill in all fields");
+        return;
       }
 
-      onAuthSuccess(data.token, data.user.username);
-    } catch (err: unknown) {
-      setError(
-        (err as Error).message || "An error occurred. Please try again.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+      setError("");
+      setLoading(true);
 
-  const submitButtonContent = useMemo(() => {
+      const endpoint = isLogin
+        ? "/api/auth/login"
+        : "/api/auth/register";
+
+      try {
+        const response = await fetch(
+          `${apiBaseUrl}${endpoint}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "Authentication failed",
+          );
+        }
+
+        onAuthSuccess(data.token, data.user.username);
+      } catch (err: unknown) {
+        setError(
+          (err as Error).message ||
+            "An error occurred. Please try again.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      apiBaseUrl,
+      isLogin,
+      onAuthSuccess,
+      password,
+      username,
+    ],
+  );
+
+  const submitButtonContent = useMemo((): ReactNode => {
     if (loading) {
       return <CircularProgress size={24} color="inherit" />;
     }
@@ -154,7 +176,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 3, borderRadius: 2 }}
+            >
               {error}
             </Alert>
           )}

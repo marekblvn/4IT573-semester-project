@@ -21,7 +21,8 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Outfit", "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily:
+      '"Outfit", "Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontWeight: 800,
     },
@@ -58,11 +59,13 @@ export const theme = createTheme({
             boxShadow: "0 6px 20px 0 rgba(0,0,0,0.6)",
           },
         },
-        containedPrimary: {
-          background: "linear-gradient(45deg, #7b1fa2 30%, #9c27b0 90%)",
+        colorPrimary: {
+          background:
+            "linear-gradient(45deg, #7b1fa2 30%, #9c27b0 90%)",
         },
-        containedSecondary: {
-          background: "linear-gradient(45deg, #ff9100 30%, #ffab40 90%)",
+        colorSecondary: {
+          background:
+            "linear-gradient(45deg, #ff9100 30%, #ffab40 90%)",
         },
       },
     },

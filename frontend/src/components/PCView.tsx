@@ -1,4 +1,8 @@
-import React from "react";
+import React, {
+  useCallback,
+  useMemo,
+  type JSX,
+} from "react";
 import {
   Box,
   Grid,
@@ -12,8 +16,11 @@ import {
   Divider,
 } from "@mui/material";
 import { QRCodeSVG } from "qrcode.react";
-import { CardItem, type CardData } from "./CardItem";
-import { type GameState } from "../../../backend/src/game/uno";
+import { CardItem } from "./CardItem";
+import {
+  type GameState,
+  type Player,
+} from "../../../backend/src/game/uno";
 import SignalWifi4BarIcon from "@mui/icons-material/SignalWifi4Bar";
 import SignalWifiOffIcon from "@mui/icons-material/SignalWifiOff";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
@@ -47,48 +54,67 @@ export const PCView: React.FC<PCViewProps> = ({
     players,
     discardPile,
     currentColor,
-    currentValue,
     turnIndex,
     winner,
     log,
   } = gameState;
 
   // Find the player object for the current logged-in user
-  const me = players.find(
-    (p) => p.username.toLowerCase() === username.toLowerCase(),
+  const me = useMemo(
+    (): Player | undefined =>
+      players.find(
+        (p) =>
+          p.username.toLowerCase() ===
+          username.toLowerCase(),
+      ),
+    [players, username],
   );
-  const isMyTurn =
-    status === "playing" &&
-    players[turnIndex]?.username.toLowerCase() === username.toLowerCase();
+  const isMyTurn = useMemo(
+    (): boolean =>
+      status === "playing" &&
+      players[turnIndex]?.username.toLowerCase() ===
+        username.toLowerCase(),
+    [players, status, turnIndex, username],
+  );
 
   // QR Code URL construction
-  const mobileUrl = `http://${lanIp}:${frontendPort}/?gameId=${gameId}&token=${token}&mode=mobile`;
+  const mobileUrl = useMemo(
+    (): string =>
+      `http://${lanIp}:${frontendPort}/?gameId=${gameId}&token=${token}&mode=mobile`,
+    [frontendPort, gameId, lanIp, token],
+  );
 
-  const getCardColorValue = (color: string) => {
-    switch (color) {
-      case "Red":
-        return "#ff5555";
-      case "Blue":
-        return "#2f80ed";
-      case "Yellow":
-        return "#f2c94c";
-      case "Green":
-        return "#27ae60";
-      default:
-        return "#9c27b0";
-    }
-  };
+  const getCardColorValue = useCallback(
+    (color: string): string => {
+      switch (color) {
+        case "Red":
+          return "#ff5555";
+        case "Blue":
+          return "#2f80ed";
+        case "Yellow":
+          return "#f2c94c";
+        case "Green":
+          return "#27ae60";
+        default:
+          return "#9c27b0";
+      }
+    },
+    [],
+  );
 
-  // Render Lobby screen
-  if (status === "lobby") {
-    const readyPlayersCount = players.filter((p) => p.isReady).length;
-    const canStart = players.length >= 2 && players.every((p) => p.isReady);
-
+  const lobbyScreen = useMemo((): JSX.Element => {
+    const canStart =
+      players.length >= 2 &&
+      players.every((p) => p.isReady);
     return (
       <Box sx={{ maxWidth: 1000, mx: "auto", p: 3 }}>
-        <Grid container spacing={4} alignItems="stretch">
+        <Grid
+          container
+          spacing={4}
+          sx={{ alignItems: "stretch" }}
+        >
           {/* Left Column: Lobby Information */}
-          <Grid item size={{ xs: 12, md: 7 }}>
+          <Grid size={{ xs: 12, md: 7 }}>
             <Paper
               sx={{
                 p: 4,
@@ -105,7 +131,10 @@ export const PCView: React.FC<PCViewProps> = ({
                   alignItems: "center",
                 }}
               >
-                <Typography variant="h4" sx={{ fontWeight: 800 }}>
+                <Typography
+                  variant="h4"
+                  sx={{ fontWeight: 800 }}
+                >
                   Game Lobby
                 </Typography>
                 <Chip
@@ -122,7 +151,11 @@ export const PCView: React.FC<PCViewProps> = ({
                 />
               </Box>
 
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography
+                variant="h6"
+                color="text.secondary"
+                sx={{ mb: 2 }}
+              >
                 Players Connected ({players.length} / 4):
               </Typography>
 
@@ -138,13 +171,18 @@ export const PCView: React.FC<PCViewProps> = ({
                       alignItems: "center",
                       justifyContent: "space-between",
                       border:
-                        player.username.toLowerCase() === username.toLowerCase()
+                        player.username.toLowerCase() ===
+                        username.toLowerCase()
                           ? "1px solid rgba(156, 39, 176, 0.4)"
                           : "1px solid rgba(255,255,255,0.05)",
                     }}
                   >
                     <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
                     >
                       {player.isConnectedPC ? (
                         <SignalWifi4BarIcon
@@ -159,16 +197,32 @@ export const PCView: React.FC<PCViewProps> = ({
                           titleAccess="PC Offline"
                         />
                       )}
-                      <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+                      <Typography
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: "1.1rem",
+                        }}
+                      >
                         {player.username}
                         {player.username.toLowerCase() ===
-                          username.toLowerCase() && " (You)"}
+                          username.toLowerCase() &&
+                          " (You)"}
                       </Typography>
                     </Box>
 
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                      }}
+                    >
                       {player.isConnectedMobile ? (
-                        <Chip size="small" label="Phone Linked" color="info" />
+                        <Chip
+                          size="small"
+                          label="Phone Linked"
+                          color="info"
+                        />
                       ) : (
                         <Chip
                           size="small"
@@ -177,8 +231,16 @@ export const PCView: React.FC<PCViewProps> = ({
                         />
                       )}
                       <Chip
-                        label={player.isReady ? "Ready" : "Not Ready"}
-                        color={player.isReady ? "success" : "warning"}
+                        label={
+                          player.isReady
+                            ? "Ready"
+                            : "Not Ready"
+                        }
+                        color={
+                          player.isReady
+                            ? "success"
+                            : "warning"
+                        }
                       />
                     </Box>
                   </Paper>
@@ -189,11 +251,15 @@ export const PCView: React.FC<PCViewProps> = ({
                 {me && (
                   <Button
                     variant="contained"
-                    color={me.isReady ? "warning" : "success"}
+                    color={
+                      me.isReady ? "warning" : "success"
+                    }
                     onClick={() => onSetReady(!me.isReady)}
                     sx={{ flexGrow: 1, py: 1.5 }}
                   >
-                    {me.isReady ? "Set Not Ready" : "Set Ready"}
+                    {me.isReady
+                      ? "Set Not Ready"
+                      : "Set Ready"}
                   </Button>
                 )}
                 {canStart && (
@@ -229,7 +295,7 @@ export const PCView: React.FC<PCViewProps> = ({
           </Grid>
 
           {/* Right Column: QR Code scanning for phone linking */}
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <Paper
               sx={{
                 p: 4,
@@ -243,7 +309,10 @@ export const PCView: React.FC<PCViewProps> = ({
                   "linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(0, 0, 0, 0) 100%)",
               }}
             >
-              <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 800, mb: 1 }}
+              >
                 Connect Your Phone
               </Typography>
               <Typography
@@ -251,8 +320,8 @@ export const PCView: React.FC<PCViewProps> = ({
                 color="text.secondary"
                 sx={{ mb: 4, maxWidth: 300 }}
               >
-                Scan this QR code with your mobile camera to view your hand and
-                play cards by swiping up!
+                Scan this QR code with your mobile camera to
+                view your hand and play cards by swiping up!
               </Typography>
 
               <Box
@@ -273,14 +342,20 @@ export const PCView: React.FC<PCViewProps> = ({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ wordBreak: "break-all", maxWidth: 280 }}
+                sx={{
+                  wordBreak: "break-all",
+                  maxWidth: 280,
+                }}
               >
                 Or open on mobile: <br />
                 <a
                   href={mobileUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: "#ff9100", textDecoration: "none" }}
+                  style={{
+                    color: "#ff9100",
+                    textDecoration: "none",
+                  }}
                 >
                   {mobileUrl.substring(0, 45)}...
                 </a>
@@ -290,13 +365,33 @@ export const PCView: React.FC<PCViewProps> = ({
         </Grid>
       </Box>
     );
-  }
+  }, [
+    gameId,
+    me,
+    mobileUrl,
+    onSetReady,
+    onStartGame,
+    players,
+    username,
+  ]);
 
-  // Render Win / Ended screen
-  if (status === "ended") {
+  const endScreen = useMemo((): JSX.Element => {
     return (
-      <Box sx={{ maxWidth: 600, mx: "auto", mt: 8, textAlign: "center" }}>
-        <Paper sx={{ p: 6, position: "relative", overflow: "hidden" }}>
+      <Box
+        sx={{
+          maxWidth: 600,
+          mx: "auto",
+          mt: 8,
+          textAlign: "center",
+        }}
+      >
+        <Paper
+          sx={{
+            p: 6,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
           {/* Confetti decoration */}
           <Box
             sx={{
@@ -312,15 +407,23 @@ export const PCView: React.FC<PCViewProps> = ({
             }}
           />
 
-          <EmojiEventsIcon sx={{ fontSize: 100, color: "#ffaa00", mb: 2 }} />
+          <EmojiEventsIcon
+            sx={{ fontSize: 100, color: "#ffaa00", mb: 2 }}
+          />
 
-          <Typography variant="h3" sx={{ fontWeight: 900, mb: 2 }}>
+          <Typography
+            variant="h3"
+            sx={{ fontWeight: 900, mb: 2 }}
+          >
             Game Over!
           </Typography>
 
           {winner ? (
             <Box sx={{ my: 4 }}>
-              <Typography variant="h5" color="text.secondary">
+              <Typography
+                variant="h5"
+                color="text.secondary"
+              >
                 Winner
               </Typography>
               <Typography
@@ -332,7 +435,11 @@ export const PCView: React.FC<PCViewProps> = ({
               </Typography>
             </Box>
           ) : (
-            <Typography variant="h5" color="warning.main" sx={{ my: 4 }}>
+            <Typography
+              variant="h5"
+              color="warning.main"
+              sx={{ my: 4 }}
+            >
               The game ended in a draw or was terminated.
             </Typography>
           )}
@@ -350,17 +457,27 @@ export const PCView: React.FC<PCViewProps> = ({
         </Paper>
       </Box>
     );
+  }, [onLeaveGame, winner]);
+
+  // Render Lobby screen
+  if (status === "lobby") {
+    return lobbyScreen;
+  }
+
+  // Render Win / Ended screen
+  if (status === "ended") {
+    return endScreen;
   }
 
   // Render Active game table
   const activePlayer = players[turnIndex];
-  const topDiscardCard = discardPile[discardPile.length - 1];
+  const topDiscardCard = discardPile.at(-1);
 
   return (
     <Box sx={{ p: 3 }}>
       <Grid container spacing={3}>
         {/* Table & Game State */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Paper
             sx={{
               p: 4,
@@ -386,13 +503,17 @@ export const PCView: React.FC<PCViewProps> = ({
                 border: "1px solid rgba(255,255,255,0.05)",
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 800 }}
+              >
                 Discard Pile Color:
               </Typography>
               <Chip
                 label={currentColor.toUpperCase()}
                 sx={{
-                  backgroundColor: getCardColorValue(currentColor),
+                  backgroundColor:
+                    getCardColorValue(currentColor),
                   color: "#fff",
                   fontWeight: 900,
                   fontSize: "1rem",
@@ -450,7 +571,10 @@ export const PCView: React.FC<PCViewProps> = ({
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={{ color: "rgba(255,255,255,0.6)", mt: 1 }}
+                    sx={{
+                      color: "rgba(255,255,255,0.6)",
+                      mt: 1,
+                    }}
                   >
                     ({gameState.deckCount})
                   </Typography>
@@ -468,7 +592,7 @@ export const PCView: React.FC<PCViewProps> = ({
               {topDiscardCard ? (
                 <Box sx={{ textAlign: "center" }}>
                   <CardItem
-                    card={topDiscardCard as CardData}
+                    card={topDiscardCard}
                     playable={false}
                   />
                   <Typography
@@ -504,12 +628,21 @@ export const PCView: React.FC<PCViewProps> = ({
                   color="primary.light"
                   sx={{ fontWeight: 800 }}
                 >
-                  🌟 It is your turn! Play from your mobile phone! 🌟
+                  🌟 It is your turn! Play from your mobile
+                  phone! 🌟
                 </Typography>
               ) : (
-                <Typography variant="h6" color="text.secondary">
+                <Typography
+                  variant="h6"
+                  color="text.secondary"
+                >
                   Current Turn:{" "}
-                  <span style={{ color: "#fff", fontWeight: 800 }}>
+                  <span
+                    style={{
+                      color: "#fff",
+                      fontWeight: 800,
+                    }}
+                  >
                     {activePlayer?.username}
                   </span>
                 </Typography>
@@ -519,24 +652,31 @@ export const PCView: React.FC<PCViewProps> = ({
         </Grid>
 
         {/* Side Panel: Players List & Log */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Grid container spacing={3}>
             {/* Players Status List */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Paper sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 800, mb: 2 }}
+                >
                   Players List
                 </Typography>
                 <List sx={{ p: 0 }}>
                   {players.map((player, idx) => {
                     const isActive = idx === turnIndex;
                     const isTargetUnoshout =
-                      gameState.unoShouted[player.username] === false &&
+                      gameState.unoShouted[
+                        player.username
+                      ] === false &&
                       player.hand.length === 1;
 
                     return (
                       <React.Fragment key={player.username}>
-                        {idx > 0 && <Divider sx={{ my: 1 }} />}
+                        {idx > 0 && (
+                          <Divider sx={{ my: 1 }} />
+                        )}
                         <ListItem
                           secondaryAction={
                             <Box
@@ -550,12 +690,16 @@ export const PCView: React.FC<PCViewProps> = ({
                                 <Chip
                                   size="small"
                                   label={
-                                    gameState.unoShouted[player.username]
+                                    gameState.unoShouted[
+                                      player.username
+                                    ]
                                       ? "UNO Yelled!"
                                       : "Forgot UNO?"
                                   }
                                   color={
-                                    gameState.unoShouted[player.username]
+                                    gameState.unoShouted[
+                                      player.username
+                                    ]
                                       ? "success"
                                       : "warning"
                                   }
@@ -564,7 +708,10 @@ export const PCView: React.FC<PCViewProps> = ({
                               )}
                               <Typography
                                 variant="h6"
-                                sx={{ fontWeight: 800, ml: 1 }}
+                                sx={{
+                                  fontWeight: 800,
+                                  ml: 1,
+                                }}
                               >
                                 {player.hand.length} 🎴
                               </Typography>
@@ -591,11 +738,16 @@ export const PCView: React.FC<PCViewProps> = ({
                                 }}
                               >
                                 <Typography
-                                  sx={{ fontWeight: isActive ? 800 : 600 }}
+                                  sx={{
+                                    fontWeight: isActive
+                                      ? 800
+                                      : 600,
+                                  }}
                                 >
                                   {player.username}
                                   {player.username.toLowerCase() ===
-                                    username.toLowerCase() && " (You)"}
+                                    username.toLowerCase() &&
+                                    " (You)"}
                                 </Typography>
                                 {player.isConnectedMobile ? (
                                   <SignalWifi4BarIcon
@@ -626,7 +778,11 @@ export const PCView: React.FC<PCViewProps> = ({
                                   variant="outlined"
                                   color="warning"
                                   size="small"
-                                  onClick={() => onCatchUno(player.username)}
+                                  onClick={() =>
+                                    onCatchUno(
+                                      player.username,
+                                    )
+                                  }
                                   sx={{
                                     mt: 0.5,
                                     py: 0.2,
@@ -655,7 +811,7 @@ export const PCView: React.FC<PCViewProps> = ({
             </Grid>
 
             {/* Live Log */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Paper
                 sx={{
                   p: 3,
@@ -664,7 +820,10 @@ export const PCView: React.FC<PCViewProps> = ({
                   flexDirection: "column",
                 }}
               >
-                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 800, mb: 1 }}
+                >
                   Lobby log
                 </Typography>
                 <Box
@@ -683,13 +842,19 @@ export const PCView: React.FC<PCViewProps> = ({
                     log.map((line, index) => (
                       <div
                         key={index}
-                        style={{ marginBottom: 4, color: "#e0e0e0" }}
+                        style={{
+                          marginBottom: 4,
+                          color: "#e0e0e0",
+                        }}
                       >
                         {line}
                       </div>
                     ))
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                    >
                       No logs yet.
                     </Typography>
                   )}
@@ -699,7 +864,7 @@ export const PCView: React.FC<PCViewProps> = ({
 
             {/* Quick QR link footer on active game */}
             {!me?.isConnectedMobile && (
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <Paper
                   sx={{
                     p: 2,
@@ -707,7 +872,10 @@ export const PCView: React.FC<PCViewProps> = ({
                     background: "rgba(255,145,0,0.05)",
                   }}
                 >
-                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 700, mb: 1 }}
+                  >
                     🔗 Phone not connected?
                   </Typography>
                   <Box
@@ -722,9 +890,15 @@ export const PCView: React.FC<PCViewProps> = ({
                       mb: 1,
                     }}
                   >
-                    <QRCodeSVG value={mobileUrl} size={90} />
+                    <QRCodeSVG
+                      value={mobileUrl}
+                      size={90}
+                    />
                   </Box>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                  >
                     Scan to view card hand on phone
                   </Typography>
                 </Paper>

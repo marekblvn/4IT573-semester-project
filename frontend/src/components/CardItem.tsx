@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import { Box, Typography } from "@mui/material";
 import { UNO_COLORS } from "../theme";
 
@@ -30,37 +30,44 @@ interface CardItemProps {
   isMobile?: boolean;
 }
 
+const PLAY_THRESHOLD = -120; // Drag up 120px to play
+
 export const CardItem: React.FC<CardItemProps> = ({
   card,
   playable,
   onPlay,
   isMobile = false,
 }) => {
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const touchStartYRef = useRef(0);
-  const PLAY_THRESHOLD = -120; // Drag up 120px to play
+  const [dragY, setDragY] = useState<number>(0);
+  const [dragging, setDragging] = useState<boolean>(false);
+  const touchStartYRef = useRef<number>(0);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!playable || !isMobile || !onPlay) return;
-    touchStartYRef.current = e.touches[0].clientY;
-    setDragging(true);
-  };
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent): void => {
+      if (!playable || !isMobile || !onPlay) return;
+      touchStartYRef.current = e.touches[0].clientY;
+      setDragging(true);
+    },
+    [isMobile, onPlay, playable],
+  );
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!dragging || !isMobile) return;
-    const currentY = e.touches[0].clientY;
-    const diffY = currentY - touchStartYRef.current;
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent): void => {
+      if (!dragging || !isMobile) return;
+      const currentY = e.touches[0].clientY;
+      const diffY = currentY - touchStartYRef.current;
 
-    // Only allow dragging upwards (negative Y)
-    if (diffY < 0) {
-      setDragY(diffY);
-    } else {
-      setDragY(diffY * 0.2); // Apply resistance for dragging downwards
-    }
-  };
+      // Only allow dragging upwards (negative Y)
+      if (diffY < 0) {
+        setDragY(diffY);
+      } else {
+        setDragY(diffY * 0.2); // Apply resistance for dragging downwards
+      }
+    },
+    [dragging, isMobile],
+  );
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback((): void => {
     if (!dragging || !isMobile) return;
     setDragging(false);
 
@@ -68,10 +75,10 @@ export const CardItem: React.FC<CardItemProps> = ({
       onPlay(card.id);
     }
     setDragY(0);
-  };
+  }, [card.id, dragY, dragging, isMobile, onPlay]);
 
-  const getCardSymbol = (value: string) => {
-    switch (value) {
+  const cardSymbol = useMemo((): string => {
+    switch (card.value) {
       case "Skip":
         return "Ø";
       case "Reverse":
@@ -83,22 +90,44 @@ export const CardItem: React.FC<CardItemProps> = ({
       case "Wild":
         return "W";
       default:
-        return value;
+        return card.value;
     }
-  };
+  }, [card.value]);
 
   // Card coloring
-  const isWild = card.color === "Wild";
-  const background = isWild ? UNO_COLORS.Wild : UNO_COLORS[card.color];
-  const glowColor = isWild ? "rgba(255,255,255,0.4)" : UNO_COLORS[card.color];
+  const isWild = useMemo((): boolean => card.color === "Wild", [card.color]);
+  const background = useMemo(
+    (): string => (isWild ? UNO_COLORS.Wild : UNO_COLORS[card.color]),
+    [card.color, isWild],
+  );
+  const glowColor = useMemo(
+    (): string => (isWild ? "rgba(255,255,255,0.4)" : UNO_COLORS[card.color]),
+    [card.color, isWild],
+  );
 
   // Dragging translation styles
-  const transformStyle = dragging
-    ? `translateY(${dragY}px) scale(1.05)`
-    : "translateY(0px) scale(1)";
-  const transitionStyle = dragging
-    ? "none"
-    : "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+  const transformStyle = useMemo(
+    (): string =>
+      dragging
+        ? `translateY(${dragY}px) scale(1.05)`
+        : "translateY(0px) scale(1)",
+    [dragY, dragging],
+  );
+  const transitionStyle = useMemo(
+    (): string =>
+      dragging
+        ? "none"
+        : "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+    [dragging],
+  );
+
+  const cardSymbolFontSize = useMemo((): string => {
+    if (card.value.length > 3) {
+      return isMobile ? "1.2rem" : "1.5rem";
+    } else {
+      return isMobile ? "2rem" : "2.5rem";
+    }
+  }, [card.value.length, isMobile]);
 
   return (
     <Box
@@ -149,7 +178,7 @@ export const CardItem: React.FC<CardItemProps> = ({
           alignSelf: "flex-start",
         }}
       >
-        {getCardSymbol(card.value)}
+        {cardSymbol}
       </Typography>
 
       {/* Center Circle Graphic */}
@@ -172,20 +201,14 @@ export const CardItem: React.FC<CardItemProps> = ({
         <Typography
           sx={{
             fontWeight: 900,
-            fontSize: isMobile
-              ? card.value.length > 3
-                ? "1.2rem"
-                : "2rem"
-              : card.value.length > 3
-                ? "1.5rem"
-                : "2.5rem",
+            fontSize: cardSymbolFontSize,
             color: isWild ? "#333" : glowColor,
             fontFamily: '"Outfit", sans-serif',
             transform: "rotate(15deg)", // counteract parent rotation
             textAlign: "center",
           }}
         >
-          {getCardSymbol(card.value)}
+          {cardSymbol}
         </Typography>
       </Box>
 
@@ -200,7 +223,7 @@ export const CardItem: React.FC<CardItemProps> = ({
           transform: "rotate(180deg)",
         }}
       >
-        {getCardSymbol(card.value)}
+        {cardSymbol}
       </Typography>
 
       {/* Glow highlight for playable card in mobile */}

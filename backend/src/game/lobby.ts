@@ -1,18 +1,27 @@
-import { UnoGame, GameState } from './uno';
+import { UnoGame } from "./uno";
 
 export class LobbyManager {
-  private games: Map<string, UnoGame> = new Map();
+  private readonly games: Map<string, UnoGame> = new Map();
   // Map of socket.id -> { username, gameId, deviceType: 'pc' | 'mobile' }
-  private socketSessions: Map<string, { username: string; gameId: string; deviceType: 'pc' | 'mobile' }> = new Map();
+  private readonly socketSessions: Map<
+    string,
+    {
+      username: string;
+      gameId: string;
+      deviceType: "pc" | "mobile";
+    }
+  > = new Map();
 
   public createGame(): UnoGame {
     // Generate a simple 5-character alphanumeric room code
-    let gameId = '';
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let gameId = "";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     do {
-      gameId = '';
+      gameId = "";
       for (let i = 0; i < 5; i++) {
-        gameId += chars.charAt(Math.floor(Math.random() * chars.length));
+        gameId += chars.charAt(
+          Math.floor(Math.random() * chars.length),
+        );
       }
     } while (this.games.has(gameId));
 
@@ -37,17 +46,21 @@ export class LobbyManager {
     socketId: string,
     username: string,
     gameId: string,
-    deviceType: 'pc' | 'mobile'
+    deviceType: "pc" | "mobile",
   ): boolean {
     const game = this.getGame(gameId);
     if (!game) return false;
 
     // Register details
-    this.socketSessions.set(socketId, { username, gameId: game.gameId, deviceType });
+    this.socketSessions.set(socketId, {
+      username,
+      gameId: game.gameId,
+      deviceType,
+    });
 
     const player = game.getPlayer(username);
     if (player) {
-      if (deviceType === 'pc') {
+      if (deviceType === "pc") {
         player.isConnectedPC = true;
       } else {
         player.isConnectedMobile = true;
@@ -57,7 +70,15 @@ export class LobbyManager {
     return true;
   }
 
-  public removeSocket(socketId: string): { username: string; gameId: string; deviceType: 'pc' | 'mobile' } | undefined {
+  public removeSocket(
+    socketId: string,
+  ):
+    | {
+        username: string;
+        gameId: string;
+        deviceType: "pc" | "mobile";
+      }
+    | undefined {
     const session = this.socketSessions.get(socketId);
     if (session) {
       this.socketSessions.delete(socketId);
@@ -65,7 +86,7 @@ export class LobbyManager {
       if (game) {
         const player = game.getPlayer(session.username);
         if (player) {
-          if (session.deviceType === 'pc') {
+          if (session.deviceType === "pc") {
             player.isConnectedPC = false;
           } else {
             player.isConnectedMobile = false;

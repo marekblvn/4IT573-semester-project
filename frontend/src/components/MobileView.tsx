@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -11,7 +11,11 @@ import {
   Stack,
 } from "@mui/material";
 import { CardItem, type CardData } from "./CardItem";
-import { type GameState, type CardColor } from "../../../backend/src/game/uno";
+import {
+  type GameState,
+  type CardColor,
+  type Player,
+} from "../../../backend/src/game/uno";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 
 interface MobileViewProps {
@@ -43,43 +47,74 @@ export const MobileView: React.FC<MobileViewProps> = ({
   } = gameState;
 
   // Find the player object for the current logged-in user
-  const me = players.find(
-    (p) => p.username.toLowerCase() === username.toLowerCase(),
+  const me = useMemo(
+    (): Player | undefined =>
+      players.find(
+        (p) =>
+          p.username.toLowerCase() ===
+          username.toLowerCase(),
+      ),
+    [players, username],
   );
-  const isMyTurn =
-    gameState.status === "playing" &&
-    players[turnIndex]?.username.toLowerCase() === username.toLowerCase();
+  const isMyTurn = useMemo(
+    (): boolean =>
+      gameState.status === "playing" &&
+      players[turnIndex]?.username.toLowerCase() ===
+        username.toLowerCase(),
+    [gameState.status, players, turnIndex, username],
+  );
 
   // If wild pending selection is active for me
-  const isWildSelectionPendingForMe =
-    wildPendingColorSelectionBy?.toLowerCase() === username.toLowerCase();
+  const isWildSelectionPendingForMe = useMemo(
+    (): boolean =>
+      wildPendingColorSelectionBy?.toLowerCase() ===
+      username.toLowerCase(),
+    [username, wildPendingColorSelectionBy],
+  );
 
   // Calculate if a card is playable
-  const isCardPlayable = (card: CardData) => {
-    if (!isMyTurn) return false;
-    if (wildPendingColorSelectionBy) return false; // Waiting for color selection
-    if (card.color === "Wild") return true;
-    return card.color === currentColor || card.value === currentValue;
-  };
+  const isCardPlayable = useCallback(
+    (card: CardData): boolean => {
+      if (!isMyTurn) return false;
+      if (wildPendingColorSelectionBy) return false; // Waiting for color selection
+      if (card.color === "Wild") return true;
+      return (
+        card.color === currentColor ||
+        card.value === currentValue
+      );
+    },
+    [
+      currentColor,
+      currentValue,
+      isMyTurn,
+      wildPendingColorSelectionBy,
+    ],
+  );
 
-  const getCardColorValue = (color: string) => {
-    switch (color) {
-      case "Red":
-        return "#ff5555";
-      case "Blue":
-        return "#2f80ed";
-      case "Yellow":
-        return "#f2c94c";
-      case "Green":
-        return "#27ae60";
-      default:
-        return "#222";
-    }
-  };
+  const getCardColorValue = useCallback(
+    (color: string): string => {
+      switch (color) {
+        case "Red":
+          return "#ff5555";
+        case "Blue":
+          return "#2f80ed";
+        case "Yellow":
+          return "#f2c94c";
+        case "Green":
+          return "#27ae60";
+        default:
+          return "#222";
+      }
+    },
+    [],
+  );
 
-  const handlePlayCard = (cardId: string) => {
-    onPlayCard(cardId);
-  };
+  const handlePlayCard = useCallback(
+    (cardId: string): void => {
+      onPlayCard(cardId);
+    },
+    [onPlayCard],
+  );
 
   return (
     <Box
@@ -91,7 +126,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
         justifyContent: "space-between",
         boxSizing: "border-box",
         overflow: "hidden",
-        background: "linear-gradient(180deg, #10101f 0%, #07070a 100%)",
+        background:
+          "linear-gradient(180deg, #10101f 0%, #07070a 100%)",
       }}
     >
       {/* Header Info Banner */}
@@ -123,11 +159,18 @@ export const MobileView: React.FC<MobileViewProps> = ({
         </Box>
 
         <Grid container spacing={1} sx={{ mt: 1 }}>
-          <Grid item xs={6}>
+          <Grid size={{ xs: 6 }}>
             <Paper
-              sx={{ p: 1, backgroundColor: "rgba(0,0,0,0.3)", border: "none" }}
+              sx={{
+                p: 1,
+                backgroundColor: "rgba(0,0,0,0.3)",
+                border: "none",
+              }}
             >
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
                 CURRENT COLOR
               </Typography>
               <Box
@@ -135,7 +178,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
                   mt: 0.5,
                   height: 28,
                   borderRadius: 1.5,
-                  backgroundColor: getCardColorValue(currentColor),
+                  backgroundColor:
+                    getCardColorValue(currentColor),
                   display: "flex",
                   justifyContent: "center",
                   alignItems: "center",
@@ -143,18 +187,29 @@ export const MobileView: React.FC<MobileViewProps> = ({
                 }}
               >
                 <Typography
-                  sx={{ fontWeight: 900, color: "#fff", fontSize: "0.85rem" }}
+                  sx={{
+                    fontWeight: 900,
+                    color: "#fff",
+                    fontSize: "0.85rem",
+                  }}
                 >
                   {currentColor.toUpperCase()}
                 </Typography>
               </Box>
             </Paper>
           </Grid>
-          <Grid item xs={6}>
+          <Grid size={{ xs: 6 }}>
             <Paper
-              sx={{ p: 1, backgroundColor: "rgba(0,0,0,0.3)", border: "none" }}
+              sx={{
+                p: 1,
+                backgroundColor: "rgba(0,0,0,0.3)",
+                border: "none",
+              }}
             >
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
                 TOP CARD VALUE
               </Typography>
               <Typography
@@ -201,7 +256,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
             >
               👉 IT'S YOUR TURN! 👈
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+            >
               Swipe card UP to the top edge to play it!
             </Typography>
           </Box>
@@ -214,7 +272,10 @@ export const MobileView: React.FC<MobileViewProps> = ({
               border: "none",
             }}
           >
-            <Typography variant="body1" color="text.secondary">
+            <Typography
+              variant="body1"
+              color="text.secondary"
+            >
               Waiting for turn:{" "}
               <strong style={{ color: "#fff" }}>
                 {players[turnIndex]?.username}
@@ -267,8 +328,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
             me.hand.map((card) => (
               <Box key={card.id} sx={{ flexShrink: 0 }}>
                 <CardItem
-                  card={card as CardData}
-                  playable={isCardPlayable(card as CardData)}
+                  card={card}
+                  playable={isCardPlayable(card)}
                   onPlay={handlePlayCard}
                   isMobile={true}
                 />
@@ -276,9 +337,15 @@ export const MobileView: React.FC<MobileViewProps> = ({
             ))
           ) : (
             <Box
-              sx={{ m: "auto", textAlign: "center", color: "text.secondary" }}
+              sx={{
+                m: "auto",
+                textAlign: "center",
+                color: "text.secondary",
+              }}
             >
-              <Typography variant="body1">No cards in your hand.</Typography>
+              <Typography variant="body1">
+                No cards in your hand.
+              </Typography>
             </Box>
           )}
         </Box>
@@ -292,7 +359,9 @@ export const MobileView: React.FC<MobileViewProps> = ({
           variant="contained"
           color="secondary"
           disabled={
-            !isMyTurn || hasDrawnThisTurn || isWildSelectionPendingForMe
+            !isMyTurn ||
+            hasDrawnThisTurn ||
+            isWildSelectionPendingForMe
           }
           onClick={onDrawCard}
           sx={{ py: 1.8, fontSize: "0.95rem" }}
@@ -306,7 +375,9 @@ export const MobileView: React.FC<MobileViewProps> = ({
           variant="outlined"
           color="inherit"
           disabled={
-            !isMyTurn || !hasDrawnThisTurn || isWildSelectionPendingForMe
+            !isMyTurn ||
+            !hasDrawnThisTurn ||
+            isWildSelectionPendingForMe
           }
           onClick={onPassTurn}
           sx={{
@@ -330,7 +401,8 @@ export const MobileView: React.FC<MobileViewProps> = ({
           py: 1.8,
           fontSize: "1rem",
           fontWeight: 900,
-          background: "linear-gradient(45deg, #ff9100 0%, #ff5555 100%)",
+          background:
+            "linear-gradient(45deg, #ff9100 0%, #ff5555 100%)",
           boxShadow: "0 0 15px rgba(255, 85, 85, 0.4)",
         }}
       >
@@ -340,16 +412,20 @@ export const MobileView: React.FC<MobileViewProps> = ({
       {/* Wild Color Selection Modal */}
       <Dialog
         open={isWildSelectionPendingForMe}
-        PaperProps={{
-          sx: {
-            background: "#121224",
-            border: "2px solid rgba(255,255,255,0.1)",
-            borderRadius: 4,
-            p: 2,
+        slotProps={{
+          paper: {
+            sx: {
+              background: "#121224",
+              border: "2px solid rgba(255,255,255,0.1)",
+              borderRadius: 4,
+              p: 2,
+            },
           },
         }}
       >
-        <DialogTitle sx={{ textAlign: "center", fontWeight: 900 }}>
+        <DialogTitle
+          sx={{ textAlign: "center", fontWeight: 900 }}
+        >
           Choose Wild Color
         </DialogTitle>
         <DialogContent>
@@ -362,31 +438,38 @@ export const MobileView: React.FC<MobileViewProps> = ({
             Select the new color for the discard pile:
           </Typography>
           <Grid container spacing={2}>
-            {(["Red", "Blue", "Yellow", "Green"] as CardColor[]).map(
-              (color) => (
-                <Grid item xs={6} key={color}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => onSelectColor(color)}
-                    sx={{
-                      py: 3,
-                      fontSize: "1.1rem",
-                      fontWeight: 900,
-                      backgroundColor: getCardColorValue(color),
-                      color: "#fff",
-                      boxShadow: `0 4px 10px ${getCardColorValue(color)}44`,
-                      "&:hover": {
-                        backgroundColor: getCardColorValue(color),
-                        transform: "scale(1.05)",
-                      },
-                    }}
-                  >
-                    {color}
-                  </Button>
-                </Grid>
-              ),
-            )}
+            {(
+              [
+                "Red",
+                "Blue",
+                "Yellow",
+                "Green",
+              ] as CardColor[]
+            ).map((color) => (
+              <Grid size={{ xs: 6 }} key={color}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => onSelectColor(color)}
+                  sx={{
+                    py: 3,
+                    fontSize: "1.1rem",
+                    fontWeight: 900,
+                    backgroundColor:
+                      getCardColorValue(color),
+                    color: "#fff",
+                    boxShadow: `0 4px 10px ${getCardColorValue(color)}44`,
+                    "&:hover": {
+                      backgroundColor:
+                        getCardColorValue(color),
+                      transform: "scale(1.05)",
+                    },
+                  }}
+                >
+                  {color}
+                </Button>
+              </Grid>
+            ))}
           </Grid>
         </DialogContent>
       </Dialog>
