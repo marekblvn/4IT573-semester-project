@@ -15,7 +15,7 @@ import {
   type GameState,
   type CardColor,
   type Player,
-} from "../../../backend/src/game/uno";
+} from "../../../backend/src/game/types";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 
 interface MobileViewProps {

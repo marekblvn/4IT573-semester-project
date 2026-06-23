@@ -22,6 +22,3 @@
 - If you have any questions or if you are not sure about the task, please ask, don't guess
 - Create separate NPM project for the frontend and the backend.
 
-If you're ready, type "I'm ready" and start working on the backend.
-
-**RESUME:** agy --conversation=000bfc0c-1148-4158-ac56-e05857b6934e (or -c)

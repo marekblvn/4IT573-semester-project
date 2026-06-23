@@ -20,7 +20,7 @@ import { CardItem } from "./CardItem";
 import {
   type GameState,
   type Player,
-} from "../../../backend/src/game/uno";
+} from "../../../backend/src/game/types";
 import SignalWifi4BarIcon from "@mui/icons-material/SignalWifi4Bar";
 import SignalWifiOffIcon from "@mui/icons-material/SignalWifiOff";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";

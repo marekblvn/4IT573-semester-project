@@ -28,7 +28,7 @@ import { io, Socket } from "socket.io-client";
 import {
   type GameState,
   type CardColor,
-} from "../../backend/src/game/uno";
+} from "../../backend/src/game/types";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 
