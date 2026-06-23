@@ -9,6 +9,7 @@ import errorHandler from "./handlers/http/error.handler";
 import createAuthRouter from "./routes/auth.routes";
 import authMiddleware from "./middlewares/auth.middleware";
 import assignRoomHandlers from "./handlers/ws/room.handler";
+import corsMiddleware from "./middlewares/cors.middleware";
 
 dotenv.config({ quiet: true });
 
@@ -27,9 +28,11 @@ async function startServer() {
 
   const app = express();
 
+  app.use(corsMiddleware);
+
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
-    cors: { origin: "*" },
+    cors: { origin: "http://localhost:5173" },
     adapter: createAdapter(pubClient, subClient),
   });
   io.on("connection", async (socket: Socket) => {

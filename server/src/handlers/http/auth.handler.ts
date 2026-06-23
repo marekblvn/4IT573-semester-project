@@ -27,7 +27,7 @@ export const register = async (req: Request, res: Response) => {
     name: name ?? username,
   });
 
-  return res.status(201).json({ message: "User created", userId: newUser.id });
+  return res.status(201).json({ username: newUser.username });
 };
 
 export const login = async (req: Request, res: Response) => {
@@ -56,5 +56,5 @@ export const login = async (req: Request, res: Response) => {
     { expiresIn: "24h" },
   );
 
-  return res.status(200).json({ token, username: user.username });
+  return res.status(200).json({ token, name: user.name });
 };
