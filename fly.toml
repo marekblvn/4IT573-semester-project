@@ -1,0 +1,42 @@
+# fly.toml app configuration file generated for 4it573-semester-project on 2026-06-23T16:42:56+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = '4it573-semester-project'
+primary_region = 'ams'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  DB_FILE_PATH = '/data/database.json'
+  NODE_ENV = 'production'
+  PORT = '8080'
+
+[[mounts]]
+  source = 'uno_db_volume'
+  destination = '/data'
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 8080
+  processes = ['app']
+
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
+  [services.concurrency]
+    type = 'connections'
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  memory = '1gb'
+  cpus = 1
+  memory_mb = 1024

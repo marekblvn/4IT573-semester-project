@@ -78,11 +78,17 @@ export const PCView: React.FC<PCViewProps> = ({
   );
 
   // QR Code URL construction
-  const mobileUrl = useMemo(
-    (): string =>
-      `http://${lanIp}:${frontendPort}/?gameId=${gameId}&token=${token}&mode=mobile`,
-    [frontendPort, gameId, lanIp, token],
-  );
+  const mobileUrl = useMemo((): string => {
+    // If running locally on localhost, use the detected LAN IP so the phone can connect
+    if (
+      globalThis.location.hostname === "localhost" ||
+      globalThis.location.hostname === "127.0.0.1"
+    ) {
+      return `http://${lanIp}:${frontendPort}/?gameId=${gameId}&token=${token}&mode=mobile`;
+    }
+    // If deployed on the web, use the browser's current origin
+    return `${globalThis.location.origin}/?gameId=${gameId}&token=${token}&mode=mobile`;
+  }, [frontendPort, gameId, lanIp, token]);
 
   const getCardColorValue = useCallback(
     (color: string): string => {

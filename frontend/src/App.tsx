@@ -63,8 +63,13 @@ export default function App() {
   const socketRef = useRef<Socket | null>(null);
 
   const apiHost = globalThis.location.hostname;
-  const apiBaseUrl = `http://${apiHost}:5001`;
-  const wsBaseUrl = `http://${apiHost}:5001`;
+  const isDev = import.meta.env.DEV;
+  const apiBaseUrl = isDev
+    ? `http://${apiHost}:5001`
+    : `${globalThis.location.protocol}//${apiHost}`;
+  const wsBaseUrl = isDev
+    ? `http://${apiHost}:5001`
+    : `${globalThis.location.protocol}//${apiHost}`;
 
   const fetchLobbies = useCallback(async () => {
     try {
@@ -184,10 +189,6 @@ export default function App() {
 
   const handlePassTurn = () => {
     socketRef.current?.emit("pass-turn");
-  };
-
-  const handleShoutUno = () => {
-    socketRef.current?.emit("shout-uno");
   };
 
   const handleSelectColor = (color: CardColor) => {
@@ -428,7 +429,6 @@ export default function App() {
           onPlayCard={handlePlayCard}
           onDrawCard={handleDrawCard}
           onPassTurn={handlePassTurn}
-          onShoutUno={handleShoutUno}
           onSelectColor={handleSelectColor}
         />
         <Snackbar

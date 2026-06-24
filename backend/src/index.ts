@@ -5,6 +5,7 @@ import http from "node:http";
 import { Server } from "socket.io";
 import cors from "cors";
 import os from "node:os";
+import path from "node:path";
 import { PORT } from "./config";
 import { db } from "./db";
 import {
@@ -481,6 +482,18 @@ io.on("connection", (socket: any) => {
       }
     }
   });
+});
+
+// Serve frontend static files in production
+const publicPath = path.join(__dirname, "public");
+app.use(express.static(publicPath));
+
+// For SPA routing, serve index.html for any request that doesn't start with /api
+app.get(/.*/, (req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    return next();
+  }
+  res.sendFile(path.join(publicPath, "index.html"));
 });
 
 // Start Server
