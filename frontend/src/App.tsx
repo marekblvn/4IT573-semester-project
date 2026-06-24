@@ -695,7 +695,7 @@ export default function App() {
                 variant="h4"
                 sx={{ fontWeight: 900 }}
               >
-                Uno Card Board Table
+                Uno Board
               </Typography>
               <Typography
                 variant="body2"

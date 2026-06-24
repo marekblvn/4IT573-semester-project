@@ -51,4 +51,5 @@ export interface GameState {
   wildPendingColorSelectionBy: string | null; // Username of player who needs to select wild color
   deckCount: number;
   log: string[];
+  creator: string | null;
 }

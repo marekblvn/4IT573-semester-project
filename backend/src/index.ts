@@ -190,6 +190,7 @@ app.post(
         .json({ error: "Unauthorized" });
 
     const game = lobbyManager.createGame();
+    game.creator = req.user.username;
     game.addPlayer(req.user.username);
 
     res.json({ gameId: game.gameId });
@@ -327,6 +328,18 @@ io.on("connection", (socket: any) => {
 
     const game = lobbyManager.getGame(session.gameId);
     if (!game) return;
+
+    // Only the lobby creator can start the game
+    if (
+      game.creator &&
+      game.creator.toLowerCase() !== username.toLowerCase()
+    ) {
+      socket.emit(
+        "error-msg",
+        "Only the lobby creator can start the game.",
+      );
+      return;
+    }
 
     const started = game.startGame();
     if (started) {

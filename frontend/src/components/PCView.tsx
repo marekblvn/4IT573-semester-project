@@ -109,7 +109,11 @@ export const PCView: React.FC<PCViewProps> = ({
   );
 
   const lobbyScreen = useMemo((): JSX.Element => {
+    const isCreator =
+      !!gameState.creator &&
+      gameState.creator.toLowerCase() === username.toLowerCase();
     const canStart =
+      isCreator &&
       players.length >= 2 &&
       players.every((p) => p.isReady);
     return (
@@ -278,8 +282,17 @@ export const PCView: React.FC<PCViewProps> = ({
                     Start Game
                   </Button>
                 )}
-              </Box>
-              {!canStart && players.length >= 2 && (
+               </Box>
+              {!isCreator && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 2, textAlign: "center" }}
+                >
+                  Only the lobby creator (<strong>{gameState.creator}</strong>) can start the game.
+                </Typography>
+              )}
+              {isCreator && !canStart && players.length >= 2 && (
                 <Typography
                   variant="body2"
                   color="warning.main"
@@ -379,6 +392,7 @@ export const PCView: React.FC<PCViewProps> = ({
     onStartGame,
     players,
     username,
+    gameState,
   ]);
 
   const endScreen = useMemo((): JSX.Element => {
@@ -692,26 +706,6 @@ export const PCView: React.FC<PCViewProps> = ({
                                 gap: 1,
                               }}
                             >
-                              {player.hand.length === 1 && (
-                                <Chip
-                                  size="small"
-                                  label={
-                                    gameState.unoShouted[
-                                      player.username
-                                    ]
-                                      ? "UNO Yelled!"
-                                      : "Forgot UNO?"
-                                  }
-                                  color={
-                                    gameState.unoShouted[
-                                      player.username
-                                    ]
-                                      ? "success"
-                                      : "warning"
-                                  }
-                                  sx={{ fontWeight: 700 }}
-                                />
-                              )}
                               <Typography
                                 variant="h6"
                                 sx={{

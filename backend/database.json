@@ -3,14 +3,14 @@
     "marek": {
       "username": "marek",
       "passwordHash": "$2b$10$wpzHnTjH.U6/9vNALV6B1u11bbX3bjyMBQUvBdsKVYHv63pM3R/Ba",
-      "gamesPlayed": 0,
-      "gamesWon": 0,
+      "gamesPlayed": 1,
+      "gamesWon": 1,
       "createdAt": "2026-06-22T23:31:38.118Z"
     },
     "test": {
       "username": "test",
       "passwordHash": "$2b$10$xXgy9siKK17U6e62b6ZEPeUI6segKVarBbkrnLWt4gHsBZDS13fw2",
-      "gamesPlayed": 0,
+      "gamesPlayed": 1,
       "gamesWon": 0,
       "createdAt": "2026-06-23T14:23:25.002Z"
     }

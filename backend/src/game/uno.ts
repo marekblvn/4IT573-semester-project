@@ -11,6 +11,7 @@ export type { CardColor, CardValue, Card, Player, GameState };
 
 export class UnoGame {
   public gameId: string;
+  public creator: string | null = null;
   public status: "lobby" | "playing" | "ended" = "lobby";
   public players: Player[] = [];
   public deck: Card[] = [];
@@ -618,6 +619,7 @@ export class UnoGame {
         this.wildPendingColorSelectionBy,
       deckCount: this.deck.length,
       log: this.log,
+      creator: this.creator,
     };
   }
 }
